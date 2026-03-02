@@ -5,12 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>PUSD Elementary School Ranker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet">
+<script>
+/* No-flash theme init — runs before first paint */
+(function(){
+  var saved=localStorage.getItem('pusd-theme');
+  var dark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var theme=saved||(dark?'dark':'light');
+  if(theme==='light') document.documentElement.setAttribute('data-theme','light');
+})();
+</script>
 <style>
 :root {
   --bg:#0e1117; --surface:#161b27; --surface2:#1e2535; --border:#252d40;
   --accent:#f0c040; --accent2:#4fc3f7; --accent3:#a78bfa;
   --text:#e8eaf0; --muted:#6b7a99; --danger:#ff6b6b; --good:#4ade80; --mid:#fbbf24;
+  --warn-text:#c8b06a;
+  color-scheme:dark;
 }
+html[data-theme="light"] {
+  --bg:#f4f6fb; --surface:#ffffff; --surface2:#eef1f8; --border:#d5daea;
+  --accent:#c9950a; --accent2:#0284c7; --accent3:#7c3aed;
+  --text:#1a2236; --muted:#536080; --danger:#dc2626; --good:#16a34a; --mid:#d97706;
+  --warn-text:#92680a;
+  color-scheme:light;
+}
+html[data-theme="light"] body::before{opacity:.08;}
+
+/* Theme transition helper */
+.theme-transitioning *{transition:background-color .28s ease,border-color .28s ease,color .28s ease!important;}
+
+/* Theme toggle button */
+.theme-toggle{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;font-size:17px;flex-shrink:0;transition:border-color .2s,transform .2s;}
+.theme-toggle:hover{border-color:var(--accent);transform:scale(1.08);}
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased;}
@@ -142,7 +169,7 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 7px rgba(240,192
   display:flex;gap:12px;align-items:flex-start;
   background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);
   border-left:4px solid var(--mid);border-radius:8px;
-  padding:14px 16px;margin-top:20px;font-size:11px;color:#c8b06a;line-height:1.6;
+  padding:14px 16px;margin-top:20px;font-size:11px;color:var(--warn-text);line-height:1.6;
 }
 .budget-alert-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
 .budget-alert strong{color:var(--mid);}
@@ -290,7 +317,10 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 7px rgba(240,192
 
   <!-- Mobile top bar -->
   <div class="mobile-header">
-    <span class="mobile-logo">PUSD Ranker</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="mobile-logo">PUSD Ranker</span>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><span class="theme-icon">🌙</span></button>
+    </div>
     <button class="mobile-toggle-btn" onclick="openDrawer()">⚙ Priorities &amp; Filters</button>
   </div>
 
@@ -313,10 +343,13 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 7px rgba(240,192
 
   <!-- Desktop sidebar -->
   <aside class="sidebar">
-    <div>
-      <div class="logo-district">Pleasanton USD · 2023–24</div>
-      <div class="logo-title">School Priority Ranker</div>
-      <div class="logo-sub">Adjust weights to rerank in real time</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+      <div>
+        <div class="logo-district">Pleasanton USD · 2023–24</div>
+        <div class="logo-title">School Priority Ranker</div>
+        <div class="logo-sub">Adjust weights to rerank in real time</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><span class="theme-icon">🌙</span></button>
     </div>
     <div class="divider"></div>
     <div id="desktop-controls" style="flex:1;overflow-y:auto;"></div>
@@ -355,6 +388,29 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 7px rgba(240,192
 <div id="page-results" class="page hidden"></div>
 
 <script>
+/* ── THEME ───────────────────────────────────────── */
+function applyTheme(t){
+  var html=document.documentElement;
+  html.classList.add('theme-transitioning');
+  html.setAttribute('data-theme',t);
+  document.querySelectorAll('.theme-icon').forEach(function(el){
+    el.textContent=t==='dark'?'☀️':'🌙';
+  });
+  localStorage.setItem('pusd-theme',t);
+  setTimeout(function(){html.classList.remove('theme-transitioning');},350);
+}
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme')||'dark';
+  applyTheme(cur==='dark'?'light':'dark');
+}
+// Sync icon with whatever theme the no-flash script already applied
+(function(){
+  var t=document.documentElement.getAttribute('data-theme')||'dark';
+  document.querySelectorAll('.theme-icon').forEach(function(el){
+    el.textContent=t==='dark'?'☀️':'🌙';
+  });
+})();
+
 /* ── DATA ─────────────────────────────────────────── */
 const SCHOOLS = [
   {id:'mohr',name:'Henry P. Mohr',
